@@ -1,0 +1,38 @@
+name: Fetch Renfe GTFS AV/LD/MD
+
+on:
+  schedule:
+    - cron: "30 4 * * *"   # cada día a las 04:30 UTC (06:30 hora España)
+  workflow_dispatch: {}      # permite lanzarlo manualmente desde GitHub
+
+permissions:
+  contents: write
+
+jobs:
+  fetch-gtfs:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Fetch GTFS y generar CSV de trayectos
+        run: |
+          python scripts/fetch_gtfs.py
+
+      - name: Commit & push si hay cambios
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          if ! git diff --cached --quiet; then
+            git commit -m "chore: gtfs $(date -u +'%Y-%m-%d')"
+            git push
+          else
+            echo "Sin cambios; nada que commitear."
+          fi
