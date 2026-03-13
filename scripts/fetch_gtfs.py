@@ -194,6 +194,15 @@ def parse_gtfs(data: bytes) -> list:
     return sorted(rows.values(), key=lambda r: r["tren"])
 
 
+# ── Extracción de ficheros crudos ─────────────────────────────────────────────
+def extract_raw(data: bytes, raw_dir: str):
+    """Extrae todos los ficheros del ZIP en raw_dir."""
+    os.makedirs(raw_dir, exist_ok=True)
+    with zipfile.ZipFile(io.BytesIO(data)) as zf:
+        zf.extractall(raw_dir)
+    print(f"Raw GTFS  : {raw_dir}/")
+
+
 # ── Main ──────────────────────────────────────────────────────────────────────
 def main():
     now_utc = datetime.datetime.now(datetime.timezone.utc)
@@ -208,6 +217,10 @@ def main():
     if load_last_hash(out_dir) == h:
         print("Sin cambios respecto a la descarga anterior. No se escribe CSV.")
         sys.exit(0)
+
+    # Guardar ficheros crudos del ZIP
+    raw_dir = os.path.join(out_dir, f"gtfs-raw-{fecha}")
+    extract_raw(data, raw_dir)
 
     print("Procesando GTFS...")
     trayectos = parse_gtfs(data)
